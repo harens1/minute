@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="ne">
+<head>
+<meta charset="UTF-8">
+<title>कार्यपालिकाको बैठक निर्णय</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+<style>
+@page{
+    size:A4;
+    margin-top:25mm;
+    margin-left:25.4mm;   /* 1 inch */
+    margin-right:5mm;     /* exactly 5mm */
+    margin-bottom:25.4mm;
+}
+
+body{
+    font-family:"Kalimati","Mangal","Noto Sans Devanagari",sans-serif;
+    margin:0;
+    background:#e5e7eb;
+    line-height:1.75;
+}
+
+/* Toolbar */
+.toolbar{
+    position:fixed;
+    top:0; left:0; right:0;
+    background:#1f2937;
+    padding:8px;
+    text-align:center;
+    z-index:1000;
+}
+.toolbar button{
+    background:#ffffff;
+    border:1px solid #cbd5e1;
+    padding:6px 14px;
+    margin:3px;
+    font-size:14px;
+    border-radius:4px;
+    cursor:pointer;
+}
+.toolbar button:hover{background:#f1f5f9;}
+
+/* Page */
+.container{
+    width:210mm;
+    min-height:297mm;
+    background:#fff;
+    margin:80px auto 0;
+    padding-top:25mm;
+    padding-left:25.4mm;
+    padding-right:5mm;
+    padding-bottom:25.4mm;
+    box-sizing:border-box;
+}
+
+/* Headings */
+h2{
+    font-weight:normal;
+    margin-bottom:18px;
+}
+
+/* Inputs */
+input, textarea, select{
+    font-family:inherit;
+    font-size:16px;
+    border:none;
+    outline:none;
+    background:none;
+}
+
+/* Name input */
+input.name{
+    min-width:160px;
+    border-bottom:1px dotted #000;
+}
+
+/* Paragraph style */
+.justify{
+    text-align:justify;
+    text-indent:32px; /* one tab */
+}
+
+/* Textarea */
+textarea{
+    width:100%;
+    resize:none;
+    overflow:hidden;
+}
+
+/* Sections */
+.section{margin-top:20px;}
+
+.item{
+    display:flex;
+    gap:6px;
+    margin-bottom:6px;
+}
+.number{width:28px;}
+.delete{
+    cursor:pointer;
+    color:#b91c1c;
+    font-size:14px;
+    padding-left:4px;
+}
+
+/* Attendance */
+.centerTitle{
+    text-align:center;
+    margin-bottom:6px;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+}
+th, td{
+    border:1px solid #000;
+    padding:8px;
+}
+th{
+    text-align:center;
+    font-weight:normal;
+}
+
+/* Clean dropdown */
+select{
+    appearance:none;
+    -webkit-appearance:none;
+    -moz-appearance:none;
+}
+
+/* Print */
+@media print{
+    .toolbar,.delete{display:none;}
+    body{background:none;}
+    .container{margin:0;}
+    select{appearance:none;}
+}
+</style>
+</head>
+
+<body>
+
+<div class="toolbar">
+    <button onclick="location.href='index.html'">🏠 मुख्य पेज</button>
+    <button onclick="location.href='files.html'">📚 फाइल सूची</button>
+    <button onclick="addProposal()">➕ प्रस्ताव</button>
+    <button onclick="addDecision()">➕ निर्णय</button>
+    <button onclick="addRow()">➕ उपस्थिति पंक्ति</button>
+    <button onclick="window.print()">👁 View</button>
+    <button onclick="window.print()">🖨 Print</button>
+    <button onclick="downloadPDF()">📄 PDF</button>
+    <button onclick="saveToDisk()">💾 सेभ</button>
+    <button id="authBtn" onclick="toggleLogin()">🔐 लगइन</button>
+    <button id="changePwBtn" style="display:none;" onclick="changePassword()">🔑 पासवर्ड परिवर्तन</button>
+    <button id="manageUsersBtn" style="display:none;" onclick="adminManageUsers()">👥 युजर व्यवस्थापन</button>
+</div>
+
+<div class="container" id="content">
+
+<h2 contenteditable="true">कार्यपालिकाको बैठक निर्णय</h2>
+
+<p><u>
+बैठक मिति (वि.सं.) :
+<input type="text" id="meetingDate"></u>
+</p>
+
+<p class="justify">
+आज मिति <strong><span id="dateInline"></span></strong> गते यस
+<select>
+  <option>नगरपालिकाका</option>
+  <option>गाउँपालिकाका</option>
+</select>
+<select>
+  <option>नगर प्रमुख</option>
+  <option>अध्यक्ष</option>
+</select>
+श्री<input type="text" class="name" placeholder="नाम"> ज्यूको अध्यक्षतामा
+निम्न सदस्यहरुको उपस्थितिमा तपसिल बमोजिमको प्रस्तावहरु उपर छलफल गरी 
+<select>
+  <option>सर्बसम्मत रुपमा निर्णय गरियो । </option>
+  <option>निर्णय गरियो ।</option>
+</select>
+</p>
+
+<div class="section">
+<div class="centerTitle"><strong>उपस्थिति :</strong></div>
+
+<table id="attendance">
+<tr>
+    <th style="width:25%;">पद</th>
+    <th style="width:45%;">पदाधिकारी / सदस्यको नाम</th>
+    <th style="width:30%;">हस्ताक्षर</th>
+</tr>
+</table>
+</div>
+
+<div class="section">
+<strong>प्रस्तावहरू :</strong>
+<div id="proposals"></div>
+</div>
+
+<div class="section">
+<strong>निर्णयहरू :</strong>
+<div id="decisions"></div>
+</div>
+
+</div>
+
+<script>
+let pCount=0,dCount=0;
+
+/* BS Date */
+function todayBS(){
+    const t=new Date();
+    let y=t.getFullYear()+56,m=t.getMonth()+1+8,d=t.getDate()+16;
+    if(d>30){d-=30;m++;}
+    if(m>12){m-=12;y++;}
+    const n=x=>x.toString().replace(/\d/g,v=>"०१२३४५६७८९"[v]);
+    return n(y)+"/"+n(String(m).padStart(2,"0"))+"/"+n(String(d).padStart(2,"0"));
+}
+
+function autoGrow(e){
+    e.style.height="auto";
+    e.style.height=e.scrollHeight+"px";
+}
+function fullStop(t){
+    t=t.trim();
+    return t.endsWith("।")?t:t+"।";
+}
+function renumber(){
+    [...proposals.children].forEach((e,i)=>e.querySelector(".number").innerText=(i+1)+".");
+    [...decisions.children].forEach((e,i)=>e.querySelector(".number").innerText=(i+1)+".");
+    pCount=proposals.children.length;
+    dCount=decisions.children.length;
+}
+function addProposal(t=""){
+    pCount++;
+    const d=document.createElement("div");
+    d.className="item";
+    d.innerHTML=`<div class="number">${pCount}.</div>
+    <textarea oninput="autoGrow(this)" onblur="this.value=fullStop(this.value)">${t}</textarea>
+    <span class="delete" onclick="this.parentElement.remove();renumber()">🗑</span>`;
+    proposals.appendChild(d);
+}
+function addDecision(t=""){
+    dCount++;
+    const d=document.createElement("div");
+    d.className="item";
+    d.innerHTML=`<div class="number">${dCount}.</div>
+    <textarea oninput="autoGrow(this)" onblur="this.value=fullStop(this.value)">प्रस्ताव नं. ${dCount} माथि छलफल गर्दा ${t}</textarea>
+    <span class="delete" onclick="this.parentElement.remove();renumber()">🗑</span>`;
+    decisions.appendChild(d);
+}
+function addRow(){
+    const r=attendance.insertRow();
+    r.innerHTML=`<td contenteditable="true"></td>
+    <td contenteditable="true"></td>
+    <td contenteditable="true"></td>`;
+}
+function downloadPDF(){
+    html2pdf().from(content).set({
+        filename:"karyapalika_baithak_nirnaya.pdf",
+        jsPDF:{unit:"mm",format:"a4",orientation:"portrait"}
+    }).save();
+}
+
+function openDB(){
+    return new Promise((resolve,reject)=>{
+        const r=indexedDB.open("minute-files",2);
+        r.onupgradeneeded=()=>{
+            const db=r.result;
+            if(!db.objectStoreNames.contains("settings")) db.createObjectStore("settings",{keyPath:"key"});
+            if(!db.objectStoreNames.contains("users")) db.createObjectStore("users",{keyPath:"username"});
+        };
+        r.onsuccess=()=>resolve(r.result);
+        r.onerror=()=>reject(r.error);
+    });
+}
+function getSavedFolder(){
+    return openDB().then(db=>new Promise((resolve)=>{
+        const req=db.transaction("settings","readonly").objectStore("settings").get("saveDir");
+        req.onsuccess=()=>resolve(req.result?req.result.handle:null);
+        req.onerror=()=>resolve(null);
+    }));
+}
+function setSavedFolder(handle){
+    return openDB().then(db=>new Promise((resolve,reject)=>{
+        const tx=db.transaction("settings","readwrite");
+        tx.objectStore("settings").put({key:"saveDir",handle});
+        tx.oncomplete=()=>resolve();
+        tx.onerror=()=>reject(tx.error);
+    }));
+}
+async function saveToDisk(){
+    const pdf=await html2pdf().from(content).set({jsPDF:{unit:"mm",format:"a4",orientation:"portrait"}}).toPdf().get("pdf");
+    const blob=pdf.output("blob");
+    const now=new Date();
+    const filename="karyapalika_baithak_nirnaya_"+now.toISOString().slice(0,10)+".pdf";
+    try{
+        let dir=await getSavedFolder();
+        if(!dir){
+            if(window.showDirectoryPicker){
+                dir=await showDirectoryPicker();
+                await setSavedFolder(dir);
+            }else if(window.showSaveFilePicker){
+                const h=await showSaveFilePicker({suggestedName:filename,types:[{description:"PDF",accept:{"application/pdf":[".pdf"]}}]});
+                const w=await h.createWritable();await w.write(blob);await w.close();
+                alert("सेभ भयो");
+                return;
+            }else{
+                const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=filename;document.body.appendChild(a);a.click();a.remove();
+                alert("डाउनलोड भए");
+                return;
+            }
+        }
+        const fh=await dir.getFileHandle(filename,{create:true});
+        const w=await fh.createWritable();await w.write(blob);await w.close();
+        alert("निर्दिष्ट फोल्डरमा सेभ भयो");
+    }catch(e){alert("सेभ त्रुटि: "+e);}
+}
+
+async function hash(t){
+    const data=new TextEncoder().encode(t);
+    const buf=await crypto.subtle.digest("SHA-256",data);
+    return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,"0")).join("");
+}
+function getUser(username){
+    return openDB().then(db=>new Promise((resolve)=>{
+        const req=db.transaction("users","readonly").objectStore("users").get(username);
+        req.onsuccess=()=>resolve(req.result||null);
+        req.onerror=()=>resolve(null);
+    }));
+}
+function setUser(user){
+    return openDB().then(db=>new Promise((resolve,reject)=>{
+        const tx=db.transaction("users","readwrite");
+        tx.objectStore("users").put(user);
+        tx.oncomplete=()=>resolve();
+        tx.onerror=()=>reject(tx.error);
+    }));
+}
+async function ensureAdmin(){
+    const u=await getUser("admin");
+    if(!u){await setUser({username:"admin",role:"admin",hash:await hash("abcd@1")});}
+}
+function currentUser(){return localStorage.getItem("sessionUser")||null;}
+async function updateUIAuth(){
+    const u=currentUser();
+    const authBtn=document.getElementById("authBtn");
+    const cp=document.getElementById("changePwBtn");
+    const mu=document.getElementById("manageUsersBtn");
+    if(!authBtn) return;
+    if(u){
+        authBtn.textContent="🔓 लगआउट ("+u+")";
+        if(cp) cp.style.display="";
+        const rec=await getUser(u);
+        if(mu) mu.style.display=rec&&rec.role==="admin"?"":"none";
+    }else{
+        authBtn.textContent="🔐 लगइन";
+        if(cp) cp.style.display="none";
+        if(mu) mu.style.display="none";
+    }
+}
+async function toggleLogin(){
+    const u=currentUser();
+    if(u){localStorage.removeItem("sessionUser");await updateUIAuth();alert("लगआउट भयो");return;}
+    const username=prompt("युजर नाम:");
+    const password=prompt("पासवर्ड:");
+    if(!username||!password){alert("अवैध इनपुट");return;}
+    const rec=await getUser(username);
+    if(!rec){alert("युजर भेटिएन");return;}
+    if(await hash(password)===rec.hash){localStorage.setItem("sessionUser",username);await updateUIAuth();alert("लगइन भयो");}
+    else{alert("पासवर्ड मिलेन");}
+}
+async function changePassword(){
+    const u=currentUser();
+    if(!u){alert("पहिले लगइन गर्नुहोस्");return;}
+    const oldPw=prompt("पुरानो पासवर्ड:");
+    const newPw=prompt("नयाँ पासवर्ड:");
+    if(!oldPw||!newPw){alert("अवैध इनपुट");return;}
+    const rec=await getUser(u);
+    if(!rec){alert("युजर भेटिएन");return;}
+    if(await hash(oldPw)!==rec.hash){alert("पुरानो पासवर्ड मिलेन");return;}
+    rec.hash=await hash(newPw);
+    await setUser(rec);
+    alert("पासवर्ड परिवर्तन भयो");
+}
+async function adminManageUsers(){
+    const u=currentUser();
+    if(!u){alert("पहिले लगइन गर्नुहोस्");return;}
+    const me=await getUser(u);
+    if(!me||me.role!=="admin"){alert("एडमिन मात्र");return;}
+    const action=prompt("कार्य ('add' / 'reset'):");
+    if(action==="add"){
+        const name=prompt("नयाँ युजर नाम:");
+        const pw=prompt("नयाँ पासवर्ड:");
+        if(!name||!pw){alert("अवैध");return;}
+        const exist=await getUser(name);
+        if(exist){alert("युजर पहिले नै छ");return;}
+        await setUser({username:name,role:"user",hash:await hash(pw)});
+        alert("युजर थपियो");
+    }else if(action==="reset"){
+        const name=prompt("युजर नाम:");
+        const pw=prompt("नयाँ पासवर्ड:");
+        if(!name||!pw){alert("अवैध");return;}
+        const rec=await getUser(name);
+        if(!rec){alert("युजर भेटिएन");return;}
+        rec.hash=await hash(pw);
+        await setUser(rec);
+        alert("पासवर्ड रिसेट भयो");
+    }else{alert("अवैध कार्य");}
+}
+
+/* Init */
+meetingDate.value=todayBS();
+dateInline.innerText=todayBS();
+ensureAdmin().then(updateUIAuth);
+ensureAdmin().then(updateUIAuth);
+</script>
+
+</body>
+</html>

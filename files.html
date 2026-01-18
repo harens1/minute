@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="ne">
+<head>
+<meta charset="UTF-8">
+<title>सेभ भएका फाइलहरू</title>
+<style>
+body{font-family:"Kalimati","Mangal","Noto Sans Devanagari",sans-serif;margin:0;background:#e5e7eb;line-height:1.75;}
+.toolbar{position:fixed;top:0;left:0;right:0;background:#1f2937;padding:8px;text-align:center;z-index:1000;}
+.toolbar button{background:#ffffff;border:1px solid #cbd5e1;padding:6px 14px;margin:3px;font-size:14px;border-radius:4px;cursor:pointer;}
+.toolbar button:hover{background:#f1f5f9;}
+.container{width:210mm;min-height:297mm;background:#fff;margin:80px auto 0;padding:25mm 5mm 25.4mm 25.4mm;box-sizing:border-box;}
+table{width:100%;border-collapse:collapse;}
+th,td{border:1px solid #000;padding:8px;}
+th{text-align:center;font-weight:normal;}
+</style>
+</head>
+<body>
+<div class="toolbar">
+  <button onclick="location.href='index.html'">⬅️ मुख्य पेज</button>
+</div>
+
+<div class="container">
+  <h2>सेभ भएका फाइलहरू</h2>
+  <table id="filesTable">
+    <tr>
+      <th style="width:8%;">क्र.</th>
+      <th style="width:22%;">मिति (वि.सं.)</th>
+      <th style="width:35%;">शीर्षक</th>
+      <th style="width:20%;">फाइल नाम</th>
+      <th style="width:15%;">डाउनलोड</th>
+    </tr>
+    <tbody id="files"></tbody>
+  </table>
+</div>
+
+<script>
+function openDB(){
+  return new Promise((resolve,reject)=>{
+    const req=indexedDB.open("minute-files",1);
+    req.onupgradeneeded=()=>{
+      const db=req.result;
+      if(!db.objectStoreNames.contains("files")){
+        const store=db.createObjectStore("files",{keyPath:"id",autoIncrement:true});
+        store.createIndex("dateISO","dateISO");
+      }
+    };
+    req.onsuccess=()=>resolve(req.result);
+    req.onerror=()=>reject(req.error);
+  });
+}
+
+function loadFiles(){
+  openDB().then(db=>{
+    const tx=db.transaction("files","readonly");
+    const store=tx.objectStore("files");
+    const req=store.getAll();
+    req.onsuccess=()=>{
+      const data=req.result||[];
+      data.sort((a,b)=>a.dateISO<b.dateISO?1:-1);
+      const tbody=document.getElementById("files");
+      tbody.innerHTML="";
+      data.forEach((r,i)=>{
+        const tr=document.createElement("tr");
+        const url=URL.createObjectURL(r.blob);
+        tr.innerHTML=
+          "<td>"+(i+1)+"</td>"+
+          "<td>"+(r.dateBS||"")+"</td>"+
+          "<td>"+(r.title||"")+"</td>"+
+          "<td>"+(r.filename||"")+"</td>"+
+          "<td><a href=\""+url+"\" download=\""+(r.filename||"file.pdf")+"\">डाउनलोड</a></td>";
+        tbody.appendChild(tr);
+      });
+    };
+  });
+}
+
+loadFiles();
+</script>
+</body>
+</html>
